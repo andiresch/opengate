@@ -42,6 +42,7 @@ class DoseActor(g4.GateDoseActor, gate.ActorBase):
         user_info.output_origin = None
         user_info.uncertainty = True
         user_info.gray = False
+        user_info.dose_to_water = False
         user_info.physical_volume_index = None
         user_info.hit_type = "random"
 
@@ -207,12 +208,16 @@ class DoseActor(g4.GateDoseActor, gate.ActorBase):
             itk.imwrite(self.uncertainty_image, n)
 
         # dose in gray
-        if self.user_info.gray:
+        if self.user_info.gray or self.user_info.dose_to_water:
             self.py_dose_image = gate.get_cpp_image(self.cpp_dose_image)
             self.py_dose_image.SetOrigin(self.output_origin)
             n = gate.check_filename_type(self.user_info.output).replace(
                 ".mhd", "_dose.mhd"
             )
+            if self.user_info.dose_to_water:
+                n = gate.check_filename_type(self.user_info.output).replace(
+                    ".mhd", "_doseToWater.mhd"
+                )
             itk.imwrite(self.py_dose_image, n)
 
         # write the image at the end of the run

@@ -13,7 +13,11 @@
 #include "itkImage.h"
 #include <pybind11/stl.h>
 
+#include "G4NistManager.hh"
+
 namespace py = pybind11;
+
+class G4EmCalculator;
 
 class GateDoseActor : public GateVActor {
 
@@ -42,6 +46,9 @@ public:
 
   // Option: indicate if we must compute dose in Gray also
   bool fGrayFlag;
+  // Option: indicate we must compute dose in Gray and convert to dose to water
+  bool fDoseToWaterFlag;
+  G4EmCalculator *emcalc;
 
   // For uncertainty computation, we need temporary images
   ImageType::Pointer cpp_square_image;

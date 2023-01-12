@@ -9,9 +9,23 @@
 #include "G4Navigator.hh"
 #include "G4RandomTools.hh"
 #include "G4RunManager.hh"
+
+#include "G4Deuteron.hh"
+#include "G4Electron.hh"
+#include "G4EmCalculator.hh"
+#include "G4Gamma.hh"
+#include "G4MaterialTable.hh"
+#include "G4NistManager.hh"
+#include "G4ParticleDefinition.hh"
+#include "G4ParticleTable.hh"
+#include "G4Positron.hh"
+#include "G4Proton.hh"
+
 #include "GateHelpers.h"
 #include "GateHelpersDict.h"
 #include "GateHelpersImage.h"
+
+#include <iostream>
 
 // Mutex that will be used by thread to write in the edep/dose image
 G4Mutex SetPixelMutex = G4MUTEX_INITIALIZER;
@@ -29,6 +43,8 @@ GateDoseActor::GateDoseActor(py::dict &user_info)
   fUncertaintyFlag = DictGetBool(user_info, "uncertainty");
   // Option: compute dose in Gray
   fGrayFlag = DictGetBool(user_info, "gray");
+  // Option: compute dose in Gray
+  fDoseToWaterFlag = DictGetBool(user_info, "dose_to_water");
   // translation
   fInitialTranslation = DictGetG4ThreeVector(user_info, "translation");
   // Hit type (random, pre, post etc)
@@ -40,6 +56,10 @@ void GateDoseActor::ActorInitialize() {
     cpp_square_image = ImageType::New();
     cpp_temp_image = ImageType::New();
     cpp_last_id_image = ImageType::New();
+  }
+  if (fDoseToWaterFlag) {
+    emcalc = new G4EmCalculator;
+    fGrayFlag = true;
   }
   if (fGrayFlag) {
     cpp_dose_image = ImageType::New();
@@ -121,9 +141,70 @@ void GateDoseActor::SteppingAction(G4Step *step) {
 
     // Compute the dose in Gray ?
     if (fGrayFlag) {
-      auto *current_material = step->GetPreStepPoint()->GetMaterial();
-      auto density = current_material->GetDensity();
-      auto dose = edep / density / fVoxelVolume / CLHEP::gray;
+      auto *material_currstep = step->GetPreStepPoint()->GetMaterial();
+      auto density_currstep = material_currstep->GetDensity();
+      auto dose = edep / density_currstep / fVoxelVolume / CLHEP::gray;
+
+      if (fDoseToWaterFlag) {
+        double dedx_cut = DBL_MAX;
+        // dedx
+        double dedx_currstep = 0., dedx_water = 0.;
+        double density_water = 1.0;
+        // other material
+        const G4ParticleDefinition *p =
+            step->GetTrack()->GetParticleDefinition();
+        static G4Material *water =
+            G4NistManager::Instance()->FindOrBuildMaterial("G4_WATER");
+        auto energy1 = step->GetPreStepPoint()->GetKineticEnergy();
+        auto energy2 = step->GetPostStepPoint()->GetKineticEnergy();
+        auto energy = (energy1 + energy2) / 2;
+        // Accounting for particles with dedx=0; i.e. gamma and neutrons
+        // For gamma we consider the dedx of electrons instead - testing
+        // with 1.3 MeV photon beam or 150 MeV protons or 1500 MeV carbon ion
+        // beam showed that the error induced is 0 		when comparing
+        // dose and dosetowater in the material G4_WATER For neutrons the dose
+        // is neglected - testing with 1.3 MeV photon beam or 150 MeV protons or
+        // 1500 MeV carbon ion beam showed that the error induced is < 0.01%
+        //		when comparing dose and dosetowater in the material
+        // G4_WATER (we are systematically missing a little bit of dose of
+        // course with this solution)
+
+        if (p == G4Gamma::Gamma())
+          p = G4Electron::Electron();
+        dedx_currstep =
+            emcalc->ComputeTotalDEDX(energy, p, material_currstep, dedx_cut);
+        dedx_water = emcalc->ComputeTotalDEDX(energy, p, water, dedx_cut);
+        density_water = water->GetDensity();
+        double spr = dedx_currstep / dedx_water;
+        double mspr =
+            (density_currstep / density_water) * (dedx_water / dedx_currstep);
+        // std::cout <<"density_currstep: " << density_currstep
+        // *(CLHEP::g/CLHEP::cm3)<< spr<< std::endl;
+        /*
+        std::cout <<"water name: " <<water->GetName() << std::endl;
+        std::cout <<"water getDensity: " <<water->GetDensity() << std::endl;
+        std::cout <<"mat name: " << material_currstep->GetName() << std::endl;
+        std::cout <<"mat temperature: " << material_currstep->GetTemperature()
+        << std::endl; std::cout <<"mat MassMolecu: " <<
+        material_currstep->GetMassOfMolecule() << std::endl; std::cout <<"mat
+        getdensity: " << material_currstep->GetDensity() << std::endl; std::cout
+        <<"density_currstep: " << density_currstep << std::endl; std::cout
+        <<"SPR: " << spr<< std::endl; std::cout <<"mSPR: " << 1/mspr<<
+        std::endl<< std::endl;
+        */
+
+        // In current implementation, dose deposited directly by neutrons is
+        // neglected - the below lines prevent "inf or NaN"
+        if (dedx_currstep == 0 || dedx_water == 0) {
+          dose = 0.;
+        } else {
+          // std::cout << "Overwrite dose: "<< std::endl;
+          dose *=
+              (density_currstep / density_water) * (dedx_water / dedx_currstep);
+        }
+      }
+
+      // std::cout << "Add to image: "<< std::endl;
       ImageAddValue<ImageType>(cpp_dose_image, index, dose);
     }
 
