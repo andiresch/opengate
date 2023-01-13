@@ -185,8 +185,11 @@ fig1 = gate.create_2D_Edep_colorMap(output_path / mhd_1, show=False)
 fig2 = gate.create_2D_Edep_colorMap(output_path / mhd_2, show=False)
 
 # Total Edep
-is_ok = gate.test_weights(
-    source2.weight / source.weight, output_path / mhd_1, output_path / mhd_2, thresh=0.2
+is_ok = gate.assert_images_ratio(
+    source2.weight / source.weight,
+    output_path / mhd_1,
+    output_path / mhd_2,
+    abs_tolerance=0.2,
 )
 
 
