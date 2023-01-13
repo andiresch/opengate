@@ -1008,7 +1008,7 @@ def compareGaussParamArrays(paramTestV, paramRefV, rel_tol=0, abs_tol=0, verb=Fa
     return is_ok
 
 
-def test_weights(expected_ratio, mhd_1, mhd_2, thresh=0.1):
+def assert_images_ratio(expected_ratio, mhd_1, mhd_2, abs_tolerance=0.1):
     img1 = itk.imread(str(mhd_1))
     img2 = itk.imread(str(mhd_2))
     data1 = itk.GetArrayViewFromImage(img1).ravel()
@@ -1024,8 +1024,9 @@ def test_weights(expected_ratio, mhd_1, mhd_2, thresh=0.1):
     print("Expected ratio is: ", expected_ratio)
 
     is_ok = False
-    if abs(ratio - expected_ratio) < thresh:
+    if abs(ratio - expected_ratio) < abs_tolerance:
         is_ok = True
+        print("Test passed.")
     else:
         print("\033[91m Ratio not as expected \033[0m")
 

@@ -142,7 +142,7 @@ class DoseActor(g4.GateDoseActor, gate.ActorBase):
             )
 
         # for dose in Gray
-        if self.user_info.gray:
+        if self.user_info.gray or self.user_info.dose_to_water:
             self.py_dose_image = gate.create_image_like(self.py_edep_image)
             gate.update_image_py_to_cpp(
                 self.py_dose_image, self.cpp_dose_image, self.first_run
