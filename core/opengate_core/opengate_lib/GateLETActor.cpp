@@ -26,7 +26,7 @@
 
 // Mutex that will be used by thread to write in the edep/dose image
 // TODO
-// G4Mutex SetPixelMutex = G4MUTEX_INITIALIZER;
+G4Mutex GateLETActorPixelMutex = G4MUTEX_INITIALIZER;
 
 GateLETActor::GateLETActor(py::dict &user_info) : GateVActor(user_info, false) {
   // Create the image pointer
@@ -100,6 +100,7 @@ void GateLETActor::SteppingAction(G4Step *step) {
 
   // set value
   if (isInside) {
+
     // With mutex (thread)
     // TODO auto lock
     // G4AutoLock mutex(&SetPixelMutex);
@@ -157,8 +158,11 @@ void GateLETActor::SteppingAction(G4Step *step) {
       scor_val_num = steplength * dedx_currstep * w / CLHEP::MeV;
       scor_val_den = steplength * w / CLHEP::mm;
     }
-    ImageAddValue<ImageType>(cpp_numerator_image, index, scor_val_num);
-    ImageAddValue<ImageType>(cpp_denominator_image, index, scor_val_den);
+    {
+      G4AutoLock mutex(&GateLETActorPixelMutex);
+      ImageAddValue<ImageType>(cpp_numerator_image, index, scor_val_num);
+      ImageAddValue<ImageType>(cpp_denominator_image, index, scor_val_den);
+    }
     //}
 
   } // else : outside the image
