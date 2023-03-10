@@ -16,7 +16,7 @@ ui.g4_verbose = False
 ui.g4_verbose_level = 1
 ui.visu = False
 ui.random_seed = 123456
-
+ui.number_of_threads = 8
 # units
 m = gate.g4_units("m")
 cm = gate.g4_units("cm")
