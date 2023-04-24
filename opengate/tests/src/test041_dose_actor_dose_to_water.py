@@ -86,7 +86,8 @@ source.position.sigma_y = 2 * mm
 source.position.translation = [0, 0, 0]
 source.direction.type = "momentum"
 source.direction.momentum = [-1, 0, 0]
-source.activity = 100 * kBq
+source.activity = 1000 * Bq
+dir(source)
 
 """
 doseActorName_IDD = "IDD"
@@ -106,8 +107,10 @@ doseFour.output = paths.output / ("test041-" + doseActorName_IDD_d + ".mhd")
 doseFour.mother = phantom_off.name
 # dose.size = [1, 250, 250]
 # dose.spacing = [100, 0.4, 0.4]
-doseFour.size = [100, 1, 1]
-doseFour.spacing = [1.0, 20.0, 20.0]
+dose_size = [1000, 1, 1]
+dose_spacing = [0.1, 20.0, 20.0]
+doseFour.size = dose_size
+doseFour.spacing = dose_spacing
 doseFour.hit_type = "random"
 doseFour.gray = True
 
@@ -118,8 +121,8 @@ doseFive.output = paths.output / ("test041-" + doseActorName_IDD_d2w + ".mhd")
 doseFive.mother = phantom_off.name
 # dose.size = [1, 250, 250]
 # dose.spacing = [100, 0.4, 0.4]
-doseFive.size = [100, 1, 1]
-doseFive.spacing = [1.0, 20.0, 20.0]
+doseFive.size = [1000, 1, 1]
+doseFive.spacing = [0.1, 20.0, 20.0]
 doseFive.hit_type = "random"
 doseFive.dose_to_water = True
 
@@ -132,8 +135,8 @@ doseFive.output = paths.output / (
 doseFive.mother = water_slab_insert.name
 # dose.size = [1, 250, 250]
 # dose.spacing = [100, 0.4, 0.4]
-doseFive.size = [100, 1, 1]
-doseFive.spacing = [1.0, 20.0, 20.0]
+doseFive.size = doseFour.size
+doseFive.spacing = doseFour.spacing
 doseFive.hit_type = "random"
 doseFive.gray = True
 
@@ -145,8 +148,8 @@ doseFive.output = paths.output / (
 doseFive.mother = water_slab_insert.name
 # dose.size = [1, 250, 250]
 # dose.spacing = [100, 0.4, 0.4]
-doseFive.size = [100, 1, 1]
-doseFive.spacing = [1.0, 20.0, 20.0]
+doseFive.size = [1000, 1, 1]
+doseFive.spacing = [0.1, 20.0, 20.0]
 doseFive.hit_type = "random"
 doseFive.dose_to_water = True
 
@@ -157,8 +160,8 @@ doseFive.output = paths.output / ("test041-" + doseActorName_entranceRegiont_d +
 doseFive.mother = entranceRegion.name
 # dose.size = [1, 250, 250]
 # dose.spacing = [100, 0.4, 0.4]
-doseFive.size = [100, 1, 1]
-doseFive.spacing = [1.0, 20.0, 20.0]
+doseFive.size = [1000, 1, 1]
+doseFive.spacing = [10.1, 20.0, 20.0]
 doseFive.hit_type = "random"
 doseFive.gray = True
 
@@ -170,8 +173,8 @@ doseFive.output = paths.output / (
 doseFive.mother = entranceRegion.name
 # dose.size = [1, 250, 250]
 # dose.spacing = [100, 0.4, 0.4]
-doseFive.size = [100, 1, 1]
-doseFive.spacing = [1.0, 20.0, 20.0]
+doseFive.size = [1000, 1, 1]
+doseFive.spacing = [0.1, 20.0, 20.0]
 doseFive.hit_type = "random"
 doseFive.dose_to_water = True
 

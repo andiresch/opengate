@@ -8,16 +8,16 @@
 #ifndef GateDoseActor_h
 #define GateDoseActor_h
 
+#include "G4Cache.hh"
 #include "G4VPrimitiveScorer.hh"
 #include "GateVActor.h"
 #include "itkImage.h"
 #include <pybind11/stl.h>
 
+#include "G4EmCalculator.hh"
 #include "G4NistManager.hh"
 
 namespace py = pybind11;
-
-class G4EmCalculator;
 
 class GateDoseActor : public GateVActor {
 
@@ -48,7 +48,6 @@ public:
   bool fGrayFlag;
   // Option: indicate we must compute dose in Gray and convert to dose to water
   bool fDoseToWaterFlag;
-  G4EmCalculator *emcalc;
 
   // For uncertainty computation, we need temporary images
   ImageType::Pointer cpp_square_image;
@@ -61,6 +60,13 @@ public:
 
   G4ThreeVector fInitialTranslation;
   std::string fHitType;
+
+  struct threadLocalT {
+    // class G4EmCalculator;
+    G4EmCalculator emcalc;
+    // emcalc = new G4EmCalculator;
+  };
+  G4Cache<threadLocalT> fThreadLocalData;
 };
 
 #endif // GateDoseActor_h

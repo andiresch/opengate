@@ -58,7 +58,7 @@ void GateDoseActor::ActorInitialize() {
     cpp_last_id_image = ImageType::New();
   }
   if (fDoseToWaterFlag) {
-    emcalc = new G4EmCalculator;
+    // emcalc = new G4EmCalculator; // removed now
     fGrayFlag = true;
   }
   if (fGrayFlag) {
@@ -171,9 +171,14 @@ void GateDoseActor::SteppingAction(G4Step *step) {
 
         if (p == G4Gamma::Gamma())
           p = G4Electron::Electron();
+        auto &l = fThreadLocalData.Get().emcalc;
+
         dedx_currstep =
-            emcalc->ComputeTotalDEDX(energy, p, material_currstep, dedx_cut);
-        dedx_water = emcalc->ComputeTotalDEDX(energy, p, water, dedx_cut);
+            l.ComputeTotalDEDX(energy, p, material_currstep, dedx_cut);
+        dedx_water = l.ComputeTotalDEDX(energy, p, water, dedx_cut);
+        // dedx_currstep =
+        //     emcalc->ComputeTotalDEDX(energy, p, material_currstep, dedx_cut);
+        // dedx_water = emcalc->ComputeTotalDEDX(energy, p, water, dedx_cut);
         density_water = water->GetDensity();
         double spr = dedx_currstep / dedx_water;
         double mspr =
