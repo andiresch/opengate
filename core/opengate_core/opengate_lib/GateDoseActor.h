@@ -42,15 +42,15 @@ public:
 
   virtual void BeginOfEventAction(const G4Event *event);
 
-  virtual void EndOfEventAction(const G4Event *event);
+  // virtual void EndOfEventAction(const G4Event *event);
 
   // Called every time the simulation is about to end (all threads)
-  virtual void EndOfSimulationWorkerAction(const G4Run *lastRun);
+  // virtual void EndOfSimulationWorkerAction(const G4Run *lastRun);
 
   // Called every time a Run ends (all threads)
   virtual void EndOfRunAction(const G4Run *run);
 
-  virtual void EndSimulationAction();
+  // virtual void EndSimulationAction();
 
   // Image type is 3D float by default
   typedef itk::Image<float, 3> Image3DType;
@@ -93,6 +93,7 @@ public:
   double fVoxelVolume;
   int NbOfEvent = 0;
   int NbOfThreads = 0;
+  int N_voxels = 0;
   double goalUncertainty;
   double threshEdepPerc;
   // struct timeval mTimeOfLastSaveEvent;

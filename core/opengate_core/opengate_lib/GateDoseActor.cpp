@@ -43,11 +43,11 @@ GateDoseActor::GateDoseActor(py::dict &user_info)
   fActions.insert("SteppingAction");
   fActions.insert("BeginOfRunAction");
   fActions.insert("BeginOfEventAction");
-  fActions.insert("EndOfSimulationWorkerAction");
-  fActions.insert("EndSimulationAction");
+  // fActions.insert("EndOfSimulationWorkerAction");
+  // fActions.insert("EndSimulationAction");
   fActions.insert("EndOfRunAction");
-  fActions.insert("EndOfEventAction");
-  // Option: compute uncertainty
+  // fActions.insert("EndOfEventAction");
+  //  Option: compute uncertainty
   fUncertaintyFlag = DictGetBool(user_info, "uncertainty");
   // Option: compute square
   fSquareFlag = DictGetBool(user_info, "square");
@@ -87,11 +87,23 @@ void GateDoseActor::ActorInitialize() {
   if (fSquareFlag || fSTEofMeanFlag) {
     cpp_square_image = Image3DType::New();
   }
+  if (fDoseFlag and !fOnFlyCalcFlag) {
+    fDoseFlag = false;
+  }
 }
 
 void GateDoseActor::BeginOfRunActionMasterThread(int run_id) {
   Image3DType::RegionType region = cpp_edep_image->GetLargestPossibleRegion();
   size_edep = region.GetSize();
+  // Important ! The volume may have moved, so we re-attach each run
+  AttachImageToVolume<Image3DType>(cpp_edep_image, fPhysicalVolumeName,
+                                   fInitialTranslation);
+
+  // compute volume of a dose voxel
+  auto sp = cpp_edep_image->GetSpacing();
+  fVoxelVolume = sp[0] * sp[1] * sp[2];
+  N_voxels = size_edep[0] * size_edep[1] * size_edep[2];
+
   if (fcpImageForThreadsFlag) {
     cpp_edep_image->SetRegions(size_edep);
     cpp_edep_image->Allocate();
@@ -106,13 +118,6 @@ void GateDoseActor::BeginOfRunActionMasterThread(int run_id) {
 
 void GateDoseActor::BeginOfRunAction(const G4Run *run) {
 
-  // Important ! The volume may have moved, so we re-attach each run
-  AttachImageToVolume<Image3DType>(cpp_edep_image, fPhysicalVolumeName,
-                                   fInitialTranslation);
-  // compute volume of a dose voxel
-  auto sp = cpp_edep_image->GetSpacing();
-  fVoxelVolume = sp[0] * sp[1] * sp[2];
-  int N_voxels = size_edep[0] * size_edep[1] * size_edep[2];
   auto &l = fThreadLocalData.Get();
 
   if (fSquareFlag && run->GetRunID() < 1) {
@@ -171,7 +176,17 @@ void GateDoseActor::SteppingAction(G4Step *step) {
   auto edep = step->GetTotalEnergyDeposit() / CLHEP::MeV * w;
   auto scoring_quantity = edep;
 
+  if (fDoseFlag) {
+    // Compute the dose in Gray
+    auto *current_material = step->GetPreStepPoint()->GetMaterial();
+    auto density = current_material->GetDensity();
+    auto dose = edep / density / fVoxelVolume / CLHEP::gray;
+
+    scoring_quantity = dose;
+  }
+
   if (fToWaterFlag) {
+    // convert to water either dose or edep, depending on the selected value
     auto *current_material = step->GetPreStepPoint()->GetMaterial();
     double dedx_cut = DBL_MAX;
     // dedx
@@ -190,28 +205,17 @@ void GateDoseActor::SteppingAction(G4Step *step) {
     dedx_currstep = emc.ComputeTotalDEDX(energy, p, current_material, dedx_cut);
     dedx_water = emc.ComputeTotalDEDX(energy, p, water, dedx_cut);
     if (dedx_currstep == 0 || dedx_water == 0) {
-      edep = 0.;
+      scoring_quantity = 0.;
     } else {
-      edep *= (dedx_water / dedx_currstep);
+      scoring_quantity *= (dedx_water / dedx_currstep);
     }
 
-    scoring_quantity = edep;
-
-    if (fDoseFlag && fOnFlyCalcFlag) {
-      double density_water = 1.0;
-      density_water = water->GetDensity();
-      auto dose = edep / density_water / fVoxelVolume / CLHEP::gray;
-      scoring_quantity = dose;
+    if (fDoseFlag) {
+      auto density_water = water->GetDensity();
+      auto density = current_material->GetDensity();
+      auto density_ratio = density / density_water;
+      scoring_quantity *= density_ratio;
     }
-  }
-
-  // Compute the dose in Gray
-  else if (fDoseFlag && fOnFlyCalcFlag) {
-    auto *current_material = step->GetPreStepPoint()->GetMaterial();
-    auto density = current_material->GetDensity();
-    auto dose = edep / density / fVoxelVolume / CLHEP::gray;
-
-    scoring_quantity = dose;
   }
 
   Image3DType::IndexType index;
@@ -250,30 +254,6 @@ void GateDoseActor::SteppingAction(G4Step *step) {
     } // else : outside the image
   }
 }
-
-void GateDoseActor::EndSimulationAction() {
-  //   double planned_NbOfEvent_per_worker = double(NbOfEvent / (NbOfThreads));
-  //   if (fSTEofMeanFlag) {
-  //     itk::ImageRegionIterator<Image3DType> edep_iterator3D(
-  //         cpp_edep_image, cpp_edep_image->GetLargestPossibleRegion());
-  //     for (edep_iterator3D.GoToBegin(); !edep_iterator3D.IsAtEnd();
-  //          ++edep_iterator3D) {
-  //
-  //       Image3DType::IndexType index_f = edep_iterator3D.GetIndex();
-  //       Image3DType::PixelType pixelValue3D_perEvent =
-  //           cpp_square_image->GetPixel(index_f);
-  //
-  //       Image3DType::PixelType pixelValue_cpp =
-  //           pixelValue3D_perEvent * planned_NbOfEvent_per_worker;
-  //       cpp_square_image->SetPixel(index_f, pixelValue_cpp);
-  //       // std::cout << "PixelValue end: " << pixelValue_cpp << std::endl;
-  //     }
-  //   }
-}
-
-void GateDoseActor::EndOfEventAction(const G4Event *event) {}
-
-void GateDoseActor::EndOfSimulationWorkerAction(const G4Run * /*lastRun*/) {}
 
 double GateDoseActor::ComputeMeanUncertainty() {
   // G4AutoLock mutex(&ComputeUncertaintyMutex);

@@ -4,9 +4,14 @@
 import opengate as gate
 from scipy.spatial.transform import Rotation
 import matplotlib.pyplot as plt
+from opengate.tests import utility
 
 if __name__ == "__main__":
-    paths = gate.get_default_test_paths(
+    """
+    This test tets the dose to water functionality relative to NIST values using Silicon as the stopping power ratio and mass stopping power are quite distinct.
+    Basic concept: two Water phantoms are calculated. One pure water, one Si with water insert. We compare the ratio of the two phantoms.
+    """
+    paths = utility.get_default_test_paths(
         __file__, "gate_test041_dose_actor_dose_to_water"
     )
 
@@ -21,12 +26,16 @@ if __name__ == "__main__":
     ui.random_seed = 123456
     ui.number_of_threads = 5
     # units
-    m = gate.g4_units("m")
-    cm = gate.g4_units("cm")
-    mm = gate.g4_units("mm")
-    km = gate.g4_units("km")
-    MeV = gate.g4_units("MeV")
-    Bq = gate.g4_units("Bq")
+    # m = gate.g4_units("m")
+    # cm = gate.g4_units("cm")
+    # mm = gate.g4_units("mm")
+    # km = gate.g4_units("km")
+    MeV = gate.g4_units.MeV
+    Bq = gate.g4_units.Bq
+    km = gate.g4_units.km
+    cm = gate.g4_units.cm
+    mm = gate.g4_units.mm
+    gcm3 = gate.g4_units.g_cm3
     kBq = 1000 * Bq
 
     # add a material database
@@ -60,12 +69,12 @@ if __name__ == "__main__":
     water_slab_insert.material = "G4_WATER"
     water_slab_insert.color = [0, 0, 1, 1]
     # si entrance
-    entranceRegion = sim.add_volume("Box", "entranceRegion")
-    entranceRegion.mother = phantom_off.name
-    entranceRegion.size = [5 * mm, 20 * mm, 20 * mm]
-    entranceRegion.translation = [47.5 * mm, 0, 0]
-    entranceRegion.material = "G4_Si"
-    entranceRegion.color = [0, 0, 1, 1]
+    Si_entrance_region = sim.add_volume("Box", "Si_entrance_region")
+    Si_entrance_region.mother = phantom_off.name
+    Si_entrance_region.size = [5 * mm, 20 * mm, 20 * mm]
+    Si_entrance_region.translation = [47.5 * mm, 0, 0]
+    Si_entrance_region.material = "G4_Si"
+    Si_entrance_region.color = [0, 0, 1, 1]
 
     # physics
     p = sim.get_physics_user_info()
@@ -108,7 +117,8 @@ if __name__ == "__main__":
     doseActorDerived.size = doseActor.size
     doseActorDerived.spacing = doseActor.spacing
     doseActorDerived.hit_type = "random"
-    doseActorDerived.dose_to_water = True
+    doseActorDerived.to_water = True
+    doseActorDerived.dose = True
 
     doseActorName_water_slab_insert_d = "IDD_waterSlab_d"
     doseActorDerived = sim.add_actor("DoseActor", doseActorName_water_slab_insert_d)
@@ -130,29 +140,56 @@ if __name__ == "__main__":
     doseActorDerived.size = doseActor.size
     doseActorDerived.spacing = doseActor.spacing
     doseActorDerived.hit_type = "random"
-    doseActorDerived.dose_to_water = True
+    doseActorDerived.to_water = True
+    doseActorDerived.dose = True
 
-    doseActorName_entranceRegiont_d = "IDD_entranceRegion_d"
-    doseActorDerived = sim.add_actor("DoseActor", doseActorName_entranceRegiont_d)
+    doseActorName_Si_entrance_regiont_d = "IDD_Si_entrance_region_d"
+    doseActorDerived = sim.add_actor("DoseActor", doseActorName_Si_entrance_regiont_d)
     doseActorDerived.output = paths.output / (
-        "test041-" + doseActorName_entranceRegiont_d + ".mhd"
+        "test041-" + doseActorName_Si_entrance_regiont_d + ".mhd"
     )
-    doseActorDerived.mother = entranceRegion.name
+    doseActorDerived.mother = Si_entrance_region.name
     doseActorDerived.size = doseActor.size
     doseActorDerived.spacing = doseActor.spacing
     doseActorDerived.hit_type = "random"
     doseActorDerived.dose = True
 
-    doseActorName_entranceRegiont_d2w = "IDD_entranceRegion_d2w"
-    doseActorDerived = sim.add_actor("DoseActor", doseActorName_entranceRegiont_d2w)
+    doseActorName_Si_entrance_regiont_d2w = "IDD_Si_entrance_region_d2w"
+    doseActorDerived = sim.add_actor("DoseActor", doseActorName_Si_entrance_regiont_d2w)
     doseActorDerived.output = paths.output / (
-        "test041-" + doseActorName_entranceRegiont_d2w + ".mhd"
+        "test041-" + doseActorName_Si_entrance_regiont_d2w + ".mhd"
     )
-    doseActorDerived.mother = entranceRegion.name
+    doseActorDerived.mother = Si_entrance_region.name
     doseActorDerived.size = doseActor.size
     doseActorDerived.spacing = doseActor.spacing
     doseActorDerived.hit_type = "random"
-    doseActorDerived.dose_to_water = True
+    doseActorDerived.to_water = True
+    doseActorDerived.dose = True
+
+    edepActorName_Si_entrance_regiont_d = "Edep_Si_entrance_region_d"
+    edepActor_Si = sim.add_actor("DoseActor", edepActorName_Si_entrance_regiont_d)
+    edepActor_Si.output = paths.output / (
+        "test041-" + edepActorName_Si_entrance_regiont_d + ".mhd"
+    )
+    edepActor_Si.mother = Si_entrance_region.name
+    edepActor_Si.size = doseActor.size
+    edepActor_Si.spacing = doseActor.spacing
+    edepActor_Si.hit_type = "random"
+    edepActor_Si.dose = False
+
+    edepActorName_Si_entrance_regiont_d2w = "Edep_Si_entrance_region_d2w"
+    edepActor_Si_to_water = sim.add_actor(
+        "DoseActor", edepActorName_Si_entrance_regiont_d2w
+    )
+    edepActor_Si_to_water.output = paths.output / (
+        "test041-" + edepActorName_Si_entrance_regiont_d2w + ".mhd"
+    )
+    edepActor_Si_to_water.mother = Si_entrance_region.name
+    edepActor_Si_to_water.size = doseActor.size
+    edepActor_Si_to_water.spacing = doseActor.spacing
+    edepActor_Si_to_water.hit_type = "random"
+    edepActor_Si_to_water.to_water = True
+    edepActor_Si_to_water.dose = False
 
     # add stat actor
     s = sim.add_actor("SimulationStatisticsActor", "stats")
@@ -185,10 +222,10 @@ if __name__ == "__main__":
     ).replace(".mhd", "-Dosetowater.mhd")
 
     doseFpath_geoSi_d = str(
-        sim.output.get_actor(doseActorName_entranceRegiont_d).user_info.output
+        sim.output.get_actor(doseActorName_Si_entrance_regiont_d).user_info.output
     ).replace(".mhd", "-Dose.mhd")
     doseFpath_geoSi_d2w = str(
-        sim.output.get_actor(doseActorName_entranceRegiont_d2w).user_info.output
+        sim.output.get_actor(doseActorName_Si_entrance_regiont_d2w).user_info.output
     ).replace(".mhd", "-Dosetowater.mhd")
     """
     doseFpath_IDD_d = sim.output.get_actor(doseActorName_IDD_d).user_info.output
@@ -200,13 +237,13 @@ if __name__ == "__main__":
         doseActorName_water_slab_insert_d2w
     ).user_info.output
     doseFpath_geoSi_d = sim.output.get_actor(
-        doseActorName_entranceRegiont_d
+        doseActorName_Si_entrance_regiont_d
     ).user_info.output
     doseFpath_geoSi_d2w = sim.output.get_actor(
-        doseActorName_entranceRegiont_d2w
+        doseActorName_Si_entrance_regiont_d2w
     ).user_info.output
 
-    unused = gate.assert_images(
+    unused = utility.assert_images(
         doseFpath_IDD_d,
         doseFpath_IDD_d2w,
         stat,
@@ -214,20 +251,41 @@ if __name__ == "__main__":
         ignore_value=0,
         axis="x",
     )
-
-    mSPR_40MeV = 1.268771331  # from PSTAR NIST tables, Feb 2023
+    mass_ratio_Si_Water = 2.33  # g/cm3
+    mass_stopping_power_Water_40MeV = 14.8  # MeV*cm2/g
+    mass_stopping_power_Si_40MeV = 11.7  # MeV*cm2/g
+    mSPR_40MeV = mass_stopping_power_Water_40MeV / mass_stopping_power_Si_40MeV
+    mSPR_40MeV = 1.268771331  # MeV/mm from PSTAR NIST tables, Feb 2023
     mSPR_80MeV = 1.253197674  # from PSTAR NIST tables, Feb 2023
-    gate.warning("Test ratio: dose / dose_to_water in geometry with material: G4_WATER")
-    is_ok = gate.assert_images_ratio(
+    stopping_power_ratio_Water_Si = mSPR_40MeV / mass_ratio_Si_Water  # 0.542900114
+
+    # utility.warning("Test ratio: dose / dose_to_water in geometry with material: G4_WATER")
+    is_ok = utility.assert_images_ratio(
         1.00, doseFpath_geoWater_d, doseFpath_geoWater_d2w, abs_tolerance=0.05
     )
 
-    gate.warning("Test ratio: dose / dose_to_water in geometry with material: G4_Si")
+    # utility.warning("Test ratio: dose / dose_to_water in geometry with material: G4_Si")
     is_ok = (
-        gate.assert_images_ratio(
+        utility.assert_images_ratio(
             mSPR_40MeV, doseFpath_geoSi_d, doseFpath_geoSi_d2w, abs_tolerance=0.05
         )
         and is_ok
     )
 
-    gate.test_ok(is_ok)
+    Fpath_geoSi_edep = sim.output.get_actor(
+        edepActorName_Si_entrance_regiont_d
+    ).user_info.output
+    Fpath_geoSi_edep2water = sim.output.get_actor(
+        edepActorName_Si_entrance_regiont_d2w
+    ).user_info.output
+    is_ok = (
+        utility.assert_images_ratio(
+            stopping_power_ratio_Water_Si,
+            Fpath_geoSi_edep,
+            Fpath_geoSi_edep2water,
+            abs_tolerance=0.05,
+        )
+        and is_ok
+    )
+
+    utility.test_ok(is_ok)
