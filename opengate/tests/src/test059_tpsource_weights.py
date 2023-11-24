@@ -119,8 +119,9 @@ if __name__ == "__main__":
     # tps
     nSim = 60000  # particles to simulate per beam
     spots, ntot, energies, G = spots_info_from_txt(
-        ref_path / "TreatmentPlan2Spots.txt", "proton"
+        ref_path / "TreatmentPlan2Spots.txt", "proton", beam_nr=1
     )
+
     tps = TreatmentPlanSource("test", sim)
     tps.set_beamline_model(beamline)
     tps.set_particles_to_simulate(nSim)
@@ -133,7 +134,8 @@ if __name__ == "__main__":
     s.track_types_flag = True
 
     # physics
-    sim.physics_manager.physics_list_name = "FTFP_INCLXX_EMZ"
+    p = sim.get_physics_user_info()
+    p.physics_list_name = "FTFP_INCLXX_EMZ"
     sim.physics_manager.set_production_cut("world", "all", 1000 * km)
     # sim.set_user_limits("phantom_a_2","max_step_size",1,['proton'])
 
@@ -157,8 +159,8 @@ if __name__ == "__main__":
 
     print("Compare tps Edep to single pb sources")
     print(" --------------------------------------- ")
-    mhd_1 = "phantom_a_1.mhd"
-    mhd_2 = "phantom_a_2.mhd"
+    mhd_1 = output.get_actor("doseInYZ_1").user_info.output
+    mhd_2 = output.get_actor("doseInYZ_2").user_info.output
     test = True
 
     # check first spot

@@ -14,6 +14,7 @@ from opengate.contrib.tps.ionbeamtherapy import spots_info_from_txt, TreatmentPl
 if __name__ == "__main__":
     # ------ INITIALIZE SIMULATION ENVIRONMENT ----------
     paths = utility.get_default_test_paths(__file__, "gate_test044_pbs")
+
     output_path = paths.output / "output_test059_rtp"
     ref_path = paths.output_ref / "test059_ref"
 
@@ -70,7 +71,9 @@ if __name__ == "__main__":
     sim.set_max_step_size(phantom.name, 0.8)
 
     # physics
-    sim.physics_manager.physics_list_name = "FTFP_INCLXX_EMZ"
+    p = sim.get_physics_user_info()
+    p.physics_list_name = "FTFP_INCLXX_EMZ"
+    # p.physics_list_name = "QGSP_BIC_EMZ"
     sim.physics_manager.set_production_cut("world", "all", 1000 * km)
 
     # add dose actor
@@ -80,7 +83,7 @@ if __name__ == "__main__":
     dose.size = [30, 620, 620]
     dose.spacing = [10.0, 0.5, 0.5]
     dose.hit_type = "random"
-    dose.gray = True
+    dose.dose = True
 
     # ---------- DEFINE BEAMLINE MODEL -------------
     IR2VBL = BeamlineModel()
@@ -106,7 +109,7 @@ if __name__ == "__main__":
     # nSim = 328935  # particles to simulate per beam
     nSim = 20000
     spots, ntot, energies, G = spots_info_from_txt(
-        ref_path / "TreatmentPlan4Gate-gate_test59tps_v.txt", "ion 6 12"
+        ref_path / "TreatmentPlan4Gate-gate_test59tps_v.txt", "ion 6 12", beam_nr=1
     )
     tps = TreatmentPlanSource("RT_plan", sim)
     tps.set_beamline_model(IR2VBL)
@@ -137,7 +140,6 @@ if __name__ == "__main__":
     dose_path = utility.scale_dose(
         str(dose.output).replace(".mhd", "_dose.mhd"),
         ntot / actual_sim_particles,
-        output_path / "threeDdoseAirSpots_vbl.mhd",
     )
 
     # SPOT POSITIONS COMPARISON
