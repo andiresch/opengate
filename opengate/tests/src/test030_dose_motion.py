@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # add dose actor
     dose = sim.add_actor("DoseActor", "dose")
-    dose.output = paths.output / "test030-edep.mhd"
+    dose.output = paths.output / "test030.mhd"
     dose.mother = "waterbox"
     dose.size = [99, 99, 99]
     mm = gate.g4_units.mm
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     is_ok = (
         utility.assert_images(
             paths.output_ref / "test030-edep.mhd",
-            paths.output / "test030-edep.mhd",
+            paths.output / "test030-Edep.mhd",
             stat,
             tolerance=30,
             ignore_value=0,
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     is_ok = (
         utility.assert_images(
             paths.output_ref / "test030-edep_uncertainty.mhd",
-            paths.output / "test030-edep_uncertainty.mhd",
+            paths.output / "test030-Edep-Uncertainty.mhd",
             stat,
             tolerance=15,
             ignore_value=1,

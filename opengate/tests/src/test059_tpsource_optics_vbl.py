@@ -137,14 +137,14 @@ if __name__ == "__main__":
     print(stat)
 
     # ------ TESTS -------
-    dose_path = utility.scale_dose(
-        str(dose.output).replace(".mhd", "_dose.mhd"),
-        ntot / actual_sim_particles,
-    )
+    # dose_path = utility.scale_dose(
+    #     str(dose.output).replace(".mhd", "_dose.mhd"),
+    #     ntot / actual_sim_particles,
+    # )
 
     # SPOT POSITIONS COMPARISON
     # read output and ref
-    img_mhd_out = itk.imread(dose_path)
+    img_mhd_out = itk.imread(dose.output)
     img_mhd_ref = itk.imread(
         ref_path / "idc-PHANTOM-air_box_vbl-gate_test59tps_v-PLAN-Physical.mhd"
     )

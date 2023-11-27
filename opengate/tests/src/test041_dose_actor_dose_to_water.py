@@ -4,9 +4,10 @@
 import opengate as gate
 from scipy.spatial.transform import Rotation
 import matplotlib.pyplot as plt
+from opengate.tests import utility
 
 if __name__ == "__main__":
-    paths = gate.get_default_test_paths(
+    paths = utility.get_default_test_paths(
         __file__, "gate_test041_dose_actor_dose_to_water"
     )
 
@@ -21,12 +22,12 @@ if __name__ == "__main__":
     ui.random_seed = 123456
     ui.number_of_threads = 5
     # units
-    m = gate.g4_units("m")
-    cm = gate.g4_units("cm")
-    mm = gate.g4_units("mm")
-    km = gate.g4_units("km")
-    MeV = gate.g4_units("MeV")
-    Bq = gate.g4_units("Bq")
+    m = gate.g4_units.m
+    cm = gate.g4_units.cm
+    mm = gate.g4_units.mm
+    km = gate.g4_units.km
+    MeV = gate.g4_units.MeV
+    Bq = gate.g4_units.Bq
     kBq = 1000 * Bq
 
     # add a material database
@@ -206,7 +207,7 @@ if __name__ == "__main__":
         doseActorName_entranceRegiont_d2w
     ).user_info.output
 
-    unused = gate.assert_images(
+    unused = utility.assert_images(
         doseFpath_IDD_d,
         doseFpath_IDD_d2w,
         stat,
@@ -217,17 +218,21 @@ if __name__ == "__main__":
 
     mSPR_40MeV = 1.268771331  # from PSTAR NIST tables, Feb 2023
     mSPR_80MeV = 1.253197674  # from PSTAR NIST tables, Feb 2023
-    gate.warning("Test ratio: dose / dose_to_water in geometry with material: G4_WATER")
-    is_ok = gate.assert_images_ratio(
+    gate.exception.warning(
+        "Test ratio: dose / dose_to_water in geometry with material: G4_WATER"
+    )
+    is_ok = utility.assert_images_ratio(
         1.00, doseFpath_geoWater_d, doseFpath_geoWater_d2w, abs_tolerance=0.05
     )
 
-    gate.warning("Test ratio: dose / dose_to_water in geometry with material: G4_Si")
+    gate.exception.warning(
+        "Test ratio: dose / dose_to_water in geometry with material: G4_Si"
+    )
     is_ok = (
-        gate.assert_images_ratio(
+        utility.assert_images_ratio(
             mSPR_40MeV, doseFpath_geoSi_d, doseFpath_geoSi_d2w, abs_tolerance=0.05
         )
         and is_ok
     )
 
-    gate.test_ok(is_ok)
+    utility.test_ok(is_ok)

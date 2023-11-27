@@ -89,8 +89,8 @@ if __name__ == "__main__":
     nozzle.material = "G4_WATER"
 
     # lookup tables
-    hu_material = "/home/fava/opengate/opengate/data/Schneider2000MaterialsTable.txt"
-    hu_density = "/home/fava/opengate/opengate/data/Schneider2000DensitiesTable.txt"
+    hu_material = paths.data / "Schneider2000MaterialsTable.txt"
+    hu_density = paths.data / "Schneider2000DensitiesTable.txt"
 
     # ct image
     mhd_ct_path = str(ref_path / "random_HU.mhd")
