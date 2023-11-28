@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sc
 from numpy.random import MT19937
 from numpy.random import RandomState, SeedSequence
 import random
@@ -149,7 +150,6 @@ def check_filename_type(filename):
 
 
 def insert_suffix_before_extension(file_path, suffix, suffixSeparator="-"):
-    print(file_path)
     if suffix:
         suffix = suffix.strip("_- *")
         suffix = suffix.capitalize()
@@ -157,14 +157,10 @@ def insert_suffix_before_extension(file_path, suffix, suffixSeparator="-"):
         path = Path(file_path)
     else:
         path = file_path
-    # print(f'{path.stem = }')
-    # print(f'{path.suffix = }')
 
-    # new_file_name = path.stem + suffixSeparator + suffix + path.suffix
     new_file_name = str(
         path.with_name(path.stem + suffixSeparator + suffix + path.suffix)
     )
-    # print(new_file_name)
     return new_file_name
 
 
@@ -270,3 +266,24 @@ def print_opengate_info():
 
     except:
         print(f"GATE date        {get_release_date(version('opengate'))} (pypi)")
+
+
+def standard_error_c4_correction(n):
+    """
+    Parameters
+    ----------
+    n : integer
+        Number of subsets (of the samples).
+
+    Returns
+    -------
+    c4 : double
+        Factor to convert the biased standard error of the mean of subsets of the sample into an unbiased
+        -  assuming a normal distribution .
+        Usage: standard_error(unbiased) = standard_deviation_of_mean(=biased) / c4
+        The reason is that the standard deviation of the mean of subsets of the sample X underestimates the true standard error. For n = 2 this underestimation is about 25%.
+
+        Values for c4: n=2: 0.7979; n= 9: 0.9693
+
+    """
+    return np.sqrt(2 / (n - 1)) * sc.special.gamma(n / 2) / sc.special.gamma((n - 1) / 2)
