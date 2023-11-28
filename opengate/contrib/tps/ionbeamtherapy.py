@@ -86,9 +86,7 @@ def spots_info_from_txt(txtFile, ionType, beam_nr):
             if check_plan_tag(line, "X Y Weight"):
                 start_index.append(i + 1)
 
-    for i in range(len(energies)):
-        e = energies[i]
-        # print(f"ENERGY: {e}")
+    for i, e in enumerate(energies):
         start = start_index[i]
         end = start_index[i] + nSpots[i]
         for j in range(start, end):
