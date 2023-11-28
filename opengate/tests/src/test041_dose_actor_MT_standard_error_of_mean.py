@@ -76,7 +76,7 @@ def run_sim(n_thr, c4_ref=None, paths=None):
     doseActor.spacing = dose_spacing
     doseActor.hit_type = "random"
     doseActor.dose = False
-    doseActor.use_more_RAM = False
+    doseActor.use_more_ram = False
     doseActor.ste_of_mean = False
     doseActor.uncertainty = True
     doseActor.square = False
@@ -91,7 +91,7 @@ def run_sim(n_thr, c4_ref=None, paths=None):
     doseActor.spacing = dose_spacing
     doseActor.hit_type = "random"
     doseActor.dose = False
-    doseActor.use_more_RAM = True
+    doseActor.use_more_ram = True
     doseActor.ste_of_mean = True
     doseActor.uncertainty = False
     doseActor.square = False
@@ -106,7 +106,7 @@ def run_sim(n_thr, c4_ref=None, paths=None):
     doseActor.spacing = dose_spacing
     doseActor.hit_type = "random"
     doseActor.dose = False
-    doseActor.use_more_RAM = True
+    doseActor.use_more_ram = True
     doseActor.ste_of_mean_unbiased = True
     doseActor.uncertainty = False
     doseActor.square = False
@@ -209,7 +209,7 @@ if __name__ == "__main__":
         1000: 0.999749781,
     }
     for n_thr in n_thrV:
-        c4_calc = gate.actors.miscactors.standard_error_c4_correction(n_thr)
+        c4_calc = gate.utility.standard_error_c4_correction(n_thr)
         if n_thr in c4_referencesV:
             c4_ref = c4_referencesV[n_thr]
             print(f"{n_thr = }")

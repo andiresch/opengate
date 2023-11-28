@@ -80,7 +80,7 @@ def run_sim(N_events: int, N_threads: int, N_voxels: int, paths):
     doseActor.spacing = dose_spacing
     doseActor.hit_type = "random"
     doseActor.dose = False
-    doseActor.use_more_RAM = False
+    doseActor.use_more_ram = False
     doseActor.ste_of_mean = False
     doseActor.uncertainty = False
     doseActor.square = False
@@ -96,7 +96,7 @@ def run_sim(N_events: int, N_threads: int, N_voxels: int, paths):
     doseActor.spacing = dose_spacing
     doseActor.hit_type = "random"
     doseActor.dose = False
-    doseActor.use_more_RAM = True
+    doseActor.use_more_ram = True
     doseActor.ste_of_mean = False
     doseActor.uncertainty = False
     doseActor.square = False
