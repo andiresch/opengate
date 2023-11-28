@@ -3,7 +3,7 @@ import numpy as np
 import opengate_core as g4
 from .base import ActorBase
 from ..exception import fatal, warning
-from ..utility import g4_units, check_filename_type, insert_suffix_before_extension
+from ..utility import g4_units, check_filename_type, insert_suffix_before_extension, standard_error_c4_correction
 from ..image import (
     create_3d_image,
     get_physical_volume,
@@ -17,7 +17,6 @@ from ..image import (
     divide_itk_images,
     scale_itk_image,
 )
-from .miscactors import standard_error_c4_correction
 from ..geometry.materials import create_mass_img, create_density_img
 
 
@@ -63,7 +62,7 @@ class DoseActor(g4.GateDoseActor, ActorBase):
 
         user_info.dose = False
         user_info.to_water = False
-        user_info.use_more_RAM = False
+        user_info.use_more_ram = False
         user_info.ste_of_mean = False
         user_info.ste_of_mean_unbiased = False
 
@@ -77,7 +76,7 @@ class DoseActor(g4.GateDoseActor, ActorBase):
         ActorBase.__init__(self, user_info)
         if user_info.ste_of_mean_unbiased or user_info.ste_of_mean:
             self.user_info.ste_of_mean = True
-            self.user_info.use_more_RAM = True
+            self.user_info.use_more_ram = True
         g4.GateDoseActor.__init__(self, user_info.__dict__)
         # attached physical volume (at init)
         self.g4_phys_vol = None
@@ -122,10 +121,10 @@ class DoseActor(g4.GateDoseActor, ActorBase):
         if self.user_info.ste_of_mean_unbiased:
             self.user_info.ste_of_mean = True
         if self.user_info.ste_of_mean or self.user_info.ste_of_mean_unbiased:
-            self.user_info.use_more_RAM = True
+            self.user_info.use_more_ram = True
         if self.user_info.goal_uncertainty:
             self.user_info.uncertainty = True
-        if self.user_info.uncertainty and self.user_info.use_more_RAM:
+        if self.user_info.uncertainty and self.user_info.use_more_ram:
             self.user_info.ste_of_mean = True
         if (
             self.user_info.ste_of_mean == True
@@ -264,7 +263,7 @@ class DoseActor(g4.GateDoseActor, ActorBase):
 
         # Write square image too
         if self.user_info.square:
-            self.get_square_image()
+            self.fetch_square_image_from_cpp()
             n = insert_suffix_before_extension(self.user_info.output, "Squared")
             itk.imwrite(self.py_square_image, n)
 
@@ -276,30 +275,27 @@ class DoseActor(g4.GateDoseActor, ActorBase):
         if self.user_info.output:
             itk.imwrite(self.py_edep_image, check_filename_type(self.user_info.output))
 
-    def compute_dose_from_edep_img(self, overrides=dict()):
+    def compute_dose_from_edep_img(self):
         """
-        * cretae mass image:
+        * create mass image:
             - from ct HU units, if dose actor attached to ImageVolume.
             - from material density, if standard volume
         * compute dose as edep_image /  mass_image
         """
-        vol_name = self.user_info.mother
-        vol = self.simulation.volume_manager.get_volume(vol_name)
-        vol_type = vol.volume_type
+        vol = self.simulation.volume_manager.get_volume(self.user_info.mother)
         spacing = np.array(self.user_info.spacing)
         voxel_volume = spacing[0] * spacing[1] * spacing[2]
         Gy = g4_units.Gy
         gcm3 = g4_units.g_cm3
 
-        if vol_type == "ImageVolume":
+        if vol.volume_type == "ImageVolume":
             material_database = (
                 self.simulation.volume_manager.material_database.g4_materials
             )
             if self.user_info.to_water:
-                # for dose 2 water, divide by density of water and not density of material
-                density_water = 1.0 * gcm3
+                # for dose to water, divide by density of water and not density of material
                 self.py_edep_image = scale_itk_image(
-                    self.py_edep_image, 1 / density_water
+                    self.py_edep_image, 1 / (1.0 * gcm3)
                 )
             else:
                 density_img = create_density_img(vol, material_database)
@@ -324,7 +320,7 @@ class DoseActor(g4.GateDoseActor, ActorBase):
                 self.py_edep_image, 1 / (voxel_volume * density * Gy)
             )
 
-    def get_square_image(self):
+    def fetch_square_image_from_cpp(self):
         if self.py_square_image == None:
             self.py_square_image = get_cpp_image(self.cpp_square_image)
             self.py_square_image.SetOrigin(self.output_origin)
@@ -359,7 +355,7 @@ class DoseActor(g4.GateDoseActor, ActorBase):
             """
             N = self.simulation.user_info.number_of_threads
 
-        self.get_square_image()
+        self.fetch_square_image_from_cpp()
 
         edep = itk.array_view_from_image(self.py_edep_image)
         square = itk.array_view_from_image(self.py_square_image)
