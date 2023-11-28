@@ -286,4 +286,6 @@ def standard_error_c4_correction(n):
         Values for c4: n=2: 0.7979; n= 9: 0.9693
 
     """
-    return np.sqrt(2 / (n - 1)) * sc.special.gamma(n / 2) / sc.special.gamma((n - 1) / 2)
+    return (
+        np.sqrt(2 / (n - 1)) * sc.special.gamma(n / 2) / sc.special.gamma((n - 1) / 2)
+    )
