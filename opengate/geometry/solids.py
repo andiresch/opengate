@@ -9,8 +9,8 @@ import opengate_core as g4
 from ..decorators import requires_fatal
 
 from .utility import (
-    get_g4_rotation,
-    get_g4_translation,
+    ensure_is_g4_rotation,
+    ensure_is_g4_translation,
 )
 
 
@@ -22,11 +22,18 @@ class SolidBase(GateObject):
 
     def close(self):
         self.release_g4_references()
+        super().close()
 
     def release_g4_references(self):
         self.g4_solid = None
 
-    def get_solid_info(self):
+    def __getstate__(self):
+        return_dict = super().__getstate__()
+        return_dict["g4_solid"] = None
+        return return_dict
+
+    @property
+    def solid_info(self):
         """Computes the properties of the solid associated with this volume."""
         # Note: This method only works in derived classes which implement the build_solid method.
         solid = self.build_solid()
@@ -48,7 +55,7 @@ class SolidBase(GateObject):
         """
         Return the min and max 3D points of the bounding box of the given volume
         """
-        pMin, pMax = self.get_solid_info().bounding_limits
+        pMin, pMax = self.solid_info.bounding_limits
         return pMin, pMax
 
     @property
@@ -100,8 +107,8 @@ class BooleanSolid(SolidBase):
         """Overrides the method from the base class.
         It constructs the solid according to the logic of the G4 boolean volumes.
         """
-        g4_rotation = get_g4_rotation(self.rotation_boolean_operation)
-        g4_translation = get_g4_translation(self.translation_boolean_operation)
+        g4_rotation = ensure_is_g4_rotation(self.rotation_boolean_operation)
+        g4_translation = ensure_is_g4_translation(self.translation_boolean_operation)
 
         # make sure creator volumes have their solids constructed
         for cv in self.creator_volumes:
@@ -455,6 +462,13 @@ class ImageSolid(SolidBase):
         self.g4_solid_x = None
         self.g4_solid_y = None
         self.g4_solid_z = None
+
+    def __getstate__(self):
+        return_dict = super().__getstate__()
+        return_dict["g4_solid_x"] = None
+        return_dict["g4_solid_y"] = None
+        return_dict["g4_solid_z"] = None
+        return return_dict
 
     def close(self):
         self.release_g4_references()

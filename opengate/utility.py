@@ -142,7 +142,7 @@ def read_mac_file_to_commands(filename):
     return commands
 
 
-def check_filename_type(filename):
+def ensure_filename_is_str(filename):
     # Algorithms (itk) do not support Path -> convert to str
     if isinstance(filename, Path):
         return str(filename)
