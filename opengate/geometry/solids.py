@@ -448,7 +448,7 @@ class TubsSolid(SolidBase):
         return g4.G4Tubs(self.name, self.rmin, self.rmax, self.dz, self.sphi, self.dphi)
 
 
-class TesselatedSolid(SolidBase):
+class TessellatedSolid(SolidBase):
     """
     https://geant4-userdoc.web.cern.ch/UsersGuides/ForApplicationDeveloper/html/Detector/Geometry/geomSolids.html?highlight=tesselated#tessellated-solids
     """
@@ -463,18 +463,23 @@ class TesselatedSolid(SolidBase):
         self.g4_solid = None
         self.facetArray = None
         self.tessellated_solid = None
+        self.vectors = None
 
     def read_file(self):
         try:
             box_mesh = stl.mesh.Mesh.from_file(self.file_name)
         except Exception as e:
             print(
-                "Error in TesselatedVolume. Could not read the file ",
+                "Error in TessellatedVolume. Could not read the file ",
                 self.file_name,
                 " Aborting.",
             )
             print("The error encountered was: ", e)
             exit()
+
+        # translate the mesh to the center of gravity
+        box_mesh = self.translate_mesh_to_center(box_mesh)
+        self.vectors = box_mesh.vectors
         return box_mesh
 
     def translate_mesh_to_center(self, mesh_to_translate):
@@ -485,14 +490,12 @@ class TesselatedSolid(SolidBase):
 
     def build_solid(self):
         mm = g4_units.mm
-        box_mesh = self.read_file()
-        # translate the mesh to the center of gravity
-        box_mesh = self.translate_mesh_to_center(box_mesh)
+        vectors = self.vectors
         # generate the tessellated solid
         self.tessellated_solid = g4.G4TessellatedSolid(self.name)
         # create an array of facets
         self.facetArray = []
-        for vertex in box_mesh.vectors:
+        for vertex in vectors:
             # Create the new facet
             # ABSOLUTE =0
             # RELATIVE =1
@@ -510,7 +513,7 @@ class TesselatedSolid(SolidBase):
         # set the solid closed
         self.tessellated_solid.SetSolidClosed(True)
         logger.debug(
-            "Created Tesselated volume: {} with a volume of: {} [mm³]".format(
+            "Created Tessellated volume: {} with a volume of: {} [mm³]".format(
                 self.name, self.tessellated_solid.GetCubicVolume() * mm
             )
         )
@@ -580,4 +583,4 @@ process_cls(TrapSolid)
 process_cls(TrdSolid)
 process_cls(TubsSolid)
 process_cls(ImageSolid)
-process_cls(TesselatedSolid)
+process_cls(TessellatedSolid)

@@ -1,5 +1,6 @@
 import sys
 import time
+import xml.etree.ElementTree as ET
 
 from box import Box
 from anytree import RenderTree, LoopError
@@ -53,13 +54,19 @@ from .geometry.volumes import (
     TubsVolume,
     PolyhedraVolume,
     HexagonVolume,
-    TesselatedVolume,
+    TessellatedVolume,
     ConsVolume,
     TrdVolume,
     BooleanVolume,
     RepeatParametrisedVolume,
     ParallelWorldVolume,
     VolumeTreeRoot,
+)
+
+from .contrib.gdml.gdml_utils import (
+    get_positions_gdml,
+    initialize_solids_gdml,
+    get_volumes_gdml,
 )
 
 
@@ -681,13 +688,13 @@ class VolumeManager(GateObject):
         "ImageVolume": ImageVolume,
         "TubsVolume": TubsVolume,
         "PolyhedraVolume": PolyhedraVolume,
-        "TextTesselatedVolume": TesselatedVolume,
+        "TextTessellatedVolume": TessellatedVolume,
         "HexagonVolume": HexagonVolume,
         "ConsVolume": ConsVolume,
         "TrdVolume": TrdVolume,
         "BooleanVolume": BooleanVolume,
         "RepeatParametrisedVolume": RepeatParametrisedVolume,
-        "TesselatedVolume": TesselatedVolume,
+        "TessellatedVolume": TessellatedVolume,
     }
 
     def __init__(self, simulation, *args, **kwargs):
@@ -754,6 +761,13 @@ class VolumeManager(GateObject):
         #  to a volume in the volumes dictionary is satisfied
         for k, v in d["volumes"].items():
             self.volumes[k].from_dictionary(v)
+
+    def from_gdml(self, gdml_filepath):
+        tree = ET.parse(gdml_filepath)
+        root = tree.getroot()
+        positions = get_positions_gdml(root) or None
+        initialize_solids_gdml(self, root, positions=positions)
+        get_volumes_gdml(self, root)
 
     @property
     def world_volume(self):
