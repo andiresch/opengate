@@ -24,6 +24,8 @@
 #include "G4Positron.hh"
 #include "G4Proton.hh"
 
+#include "G4LinInterpolation.hh"
+
 // Mutex that will be used by thread to write in the edep/dose image
 G4Mutex SetLETPixelMutex = G4MUTEX_INITIALIZER;
 
@@ -37,6 +39,7 @@ GateLETActor::GateLETActor(py::dict &user_info) : GateVActor(user_info, true) {
   fActions.insert("BeginOfRunAction");
   fActions.insert("EndSimulationAction");
   // Option: compute uncertainty
+  fmMKM = DictGetBool(user_info, "enable_rbe");
   fdoseAverage = DictGetBool(user_info, "dose_average");
   ftrackAverage = DictGetBool(user_info, "track_average");
   fLETtoOtherMaterial = DictGetBool(user_info, "let_to_other_material");
@@ -45,6 +48,18 @@ GateLETActor::GateLETActor(py::dict &user_info) : GateVActor(user_info, true) {
   fInitialTranslation = DictGetG4ThreeVector(user_info, "translation");
   // Hit type (random, pre, post etc)
   fHitType = DictGetStr(user_info, "hit_type");
+  // Option: RBE model type (mkm, etc)
+  if (fmMKM) {
+    // create lookuptable
+    // energies = new G4DataVector;
+    table = new std::vector<G4DataVector *>;
+    CreateLookupTable(user_info);
+    fRBEmodel = DictGetStr(user_info, "rbe_model");
+    if (fRBEmodel == "mkm") {
+      fAlpha0 = DictGetDouble(user_info, "alpha_0");
+      fBeta = DictGetDouble(user_info, "beta");
+    }
+  }
 }
 
 void GateLETActor::ActorInitialize() {}
@@ -155,11 +170,117 @@ void GateLETActor::SteppingAction(G4Step *step) {
       scor_val_num = steplength * dedx_currstep * w / CLHEP::MeV;
       scor_val_den = steplength * w / CLHEP::mm;
     }
+    if (fmMKM) {
+      const G4ParticleDefinition *p = step->GetTrack()->GetParticleDefinition();
+      if (p == G4Gamma::Gamma())
+        p = G4Electron::Electron();
+      /*auto dedx_currstep =
+          emcalc->ComputeElectronicDEDX(energy, p, current_material, dedx_cut) /
+          CLHEP::MeV * CLHEP::mm;*/
+      auto charge = int(p->GetAtomicNumber());
+      auto mass = p->GetAtomicMass();
+      auto table_value = GetValue(charge, energy); // energy has unit?
+      auto alpha_currstep = fAlpha0 + fBeta * table_value;
+      /*
+      ========== GATE 9.3
+          if(mDoseEnergyByZ[i][k]>energy){
+                                            efficiency=mDoseEfficiencyByZ[i][k-1]+(mDoseEfficiencyByZ[i][k]-mDoseEfficiencyByZ[i][k-1])/(mDoseEnergyByZ[i][k]-mDoseEnergyByZ[i][k-1])*(energy-mDoseEnergyByZ[i][k-1]);
+                                            k=mDoseEnergyByZ[i].size();
+                                          }
+                                          else
+      if(k==mDoseEnergyByZ[i].size()-1){ GateMessage("Actor", 0, "WARNING
+      particle energy larger than energies available in the file:
+      "<<mDoseEfficiencyFileByZ.at(i)<<" Efficiency = 1 instead"<<Gateendl);
+                                          }
+                                          ======= GATE 9.3
+
+                                  */
+      //     std::cout<< "energy:" << energy << ", mass: " << mass << std::endl;
+      //     std::cout << "Charge: " << charge << ", energy/mass: " <<
+      //     energy/mass << std::endl; std::cout <<"z*_1D: " << table_value <<
+      //     ", alpha_step: " << alpha_currstep<< std::endl;
+
+      // auto steplength = step->GetStepLength() / CLHEP::mm;
+      double scor_val_num = 0.;
+      double scor_val_den = 0.;
+
+      scor_val_num = edep * alpha_currstep / CLHEP::mm;
+      scor_val_den = edep / CLHEP::mm;
+    }
     ImageAddValue<ImageType>(cpp_numerator_image, index, scor_val_num);
     ImageAddValue<ImageType>(cpp_denominator_image, index, scor_val_den);
     //}
 
   } // else : outside the image
+}
+
+// ========================== copied from RBE Actor =====================
+
+void GateLETActor::CreateLookupTable(py::dict &user_info) {
+  // get lookup table
+  std::vector<std::vector<double>> lookupTab =
+      DictGetVecofVecDouble(user_info, "lookup_table");
+  // energies = VectorToG4DataVector(lookupTab[0]);
+
+  for (int i = 1; i < lookupTab.size(); i++) {
+    table->push_back(VectorToG4DataVector(lookupTab[i]));
+  }
+}
+
+double GateLETActor::GetValue(int Z, float energy) {
+  // std::cout << "GetValue: Z: " << Z << ", energy[MeV/u]: " << energy <<
+  // std::endl;
+  // initalize value
+  G4double y = 0;
+  // get table values for the given Z
+  //   if (Z > 6 || Z < 1 ){
+  // 	  return 0;}
+  //   G4DataVector *data = (*table)[Z - 1];
+  G4DataVector *Z_vec = new G4DataVector();
+  Z_vec->insertAt(0, Z);
+  int bin_table = -1;
+  G4DataVector *energies;
+  G4DataVector *data;
+  for (int i = 0; i < table->size(); i++) {
+    if (*(*table)[i] == *Z_vec) {
+      bin_table = i;
+      energies = (*table)[i + 1];
+      data = (*table)[i + 2];
+    }
+  }
+  if (bin_table == -1) {
+    return 0;
+  }
+  // find the index of the lower bound energy to the given energy
+  size_t bin = FindLowerBound(energy, energies);
+  // std::cout << "interpolation bin: " << bin << std::endl;
+  G4LinInterpolation linearAlgo;
+  // get table value for the given energy
+  y = linearAlgo.Calculate(energy, bin, *energies, *data);
+  // std::cout<<"interpolation output:" << y << std::endl;
+
+  return y;
+}
+
+size_t GateLETActor::FindLowerBound(G4double x, G4DataVector *values) const {
+  size_t lowerBound = 0;
+  size_t upperBound(values->size() - 1);
+  if (x < (*values)[0]) {
+    return 0;
+  }
+  if (x > (*values).back()) {
+    return values->size() - 1;
+  }
+  while (lowerBound <= upperBound) {
+    size_t midBin((lowerBound + upperBound) / 2);
+    // std::cout<<"upper: "<<upperBound<<" lower: "<<lowerBound<<std::endl;
+    // std::cout<<(*values)[midBin]<<std::endl;
+    if (x < (*values)[midBin])
+      upperBound = midBin - 1;
+    else
+      lowerBound = midBin + 1;
+  }
+  return upperBound;
 }
 
 void GateLETActor::EndSimulationAction() {}

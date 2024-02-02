@@ -8,6 +8,7 @@
 #ifndef OPENGATE_CORE_OPENGATEHELPERSDICT_H
 #define OPENGATE_CORE_OPENGATEHELPERSDICT_H
 
+#include <G4DataVector.hh>
 #include <G4RotationMatrix.hh>
 #include <G4ThreeVector.hh>
 #include <iostream>
@@ -46,6 +47,9 @@ std::vector<double> DictGetVecDouble(py::dict &user_info,
 std::vector<py::dict> DictGetVecDict(py::dict &user_info,
                                      const std::string &key);
 
+std::vector<std::vector<double>> DictGetVecofVecDouble(py::dict &user_info,
+                                                       const std::string &key);
+
 std::vector<G4RotationMatrix>
 DictGetVecG4RotationMatrix(py::dict &user_info, const std::string &key);
 
@@ -61,5 +65,7 @@ bool StrToBool(std::string &s);
 double StrToDouble(std::string &s);
 
 G4ThreeVector StrToG4ThreeVector(std::string &s);
+
+G4DataVector *VectorToG4DataVector(std::vector<double> data);
 
 #endif // OPENGATE_CORE_OPENGATEHELPERSDICT_H

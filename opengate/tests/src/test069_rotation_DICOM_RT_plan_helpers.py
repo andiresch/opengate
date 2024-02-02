@@ -354,7 +354,7 @@ def add_patient_image(sim, name, path_image, img, cp_param):
     dose.square = False
     dose.translation = [0, 0, 0]
     dose.hit_type = "random"
-    dose.gray = True
+    dose.dose = True
 
 
 def add_target(sim, name, z_linac):

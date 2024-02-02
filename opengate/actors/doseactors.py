@@ -439,10 +439,42 @@ class LETActor(g4.GateLETActor, ActorBase):
         user_info.let_to_water = False
         user_info.other_material = ""
         user_info.separate_output = False
+        user_info.enable_rbe = False
+        # ==== RBE
+        ## Settings for RBE
+        user_info.rbe_model = "mkm"
+        user_info.lookup_table_path = None
+        user_info.lookup_table = None
+
+        user_info.r_n = 3.9  # um
+        user_info.r_d = 0.32  # um
+        user_info.alpha_0 = 0.172  # Gy-1
+        user_info.beta = 0.0615  # Gy-2
+
+        user_info.alpha_ref = 0.764  # Gy-1
+        user_info.beta_ref = 0.0615  # Gy-2
+        user_info.fclin = 2.41
+        user_info.is_energy_per_nucleon = False
 
     def __init__(self, user_info):
+        if user_info.enable_rbe:
+            if not user_info.lookup_table_path:
+                print(user_info.lookup_table_path)
+                raise ValueError(
+                    "Lookup table path is necessary for RBE actor. Set it at user_info.lookup_table_path"
+                )
+            print("Going to read table:")
+            user_info.lookup_table = self.store_lookup_table(
+                user_info.lookup_table_path,
+                is_energy_per_nucleon=user_info.is_energy_per_nucleon,
+            )  # to pass it on C++ side
+            print(type(user_info.lookup_table))
+            print(user_info.lookup_table)
+            # === RBE
+
         ## TODO: why not super? what would happen?
         ActorBase.__init__(self, user_info)
+
         g4.GateLETActor.__init__(self, user_info.__dict__)
         # attached physical volume (at init)
         self.g4_phys_vol = None
@@ -492,10 +524,10 @@ class LETActor(g4.GateLETActor, ActorBase):
         # for initialization during the first run
         self.first_run = True
 
-        if self.user_info.dose_average == self.user_info.track_average:
-            fatal(
-                f"Ambiguous to enable dose and track averaging: \ndose_average: {self.user_info.dose_average} \ntrack_average: { self.user_info.track_average} \nOnly one option can and must be set to True"
-            )
+        # if self.user_info.dose_average == self.user_info.track_average:
+        #     fatal(
+        #         f"Ambiguous to enable dose and track averaging: \ndose_average: {self.user_info.dose_average} \ntrack_average: { self.user_info.track_average} \nOnly one option can and must be set to True"
+        #     )
 
         if self.user_info.other_material:
             self.user_info.let_to_other_material = True
@@ -631,6 +663,64 @@ class LETActor(g4.GateLETActor, ActorBase):
                     self.user_info.output, "denominator"
                 )
                 itk.imwrite(self.py_denominator_image, fPath)
+
+    def store_lookup_table(self, table_path, is_energy_per_nucleon=False):
+        # Element-Z mapping
+        mapping = {
+            "H": 1,
+            "He": 2,
+            "Li": 3,
+            "Be": 4,
+            "B": 5,
+            "C": 6,
+            "N": 7,
+            "O": 8,
+            "F": 9,
+            "Ne": 10,
+        }
+
+        with open(table_path, "r") as f:
+            lines = f.readlines()
+        # add extra line to sign end of file
+        lines.append("\n")
+        start_table = False
+        end_table = True
+        # e_table = []
+        v_table = []
+        for line in lines:
+            if "Fragment" in line:
+                element = line.split()[1]
+                Z = mapping[element]
+                values = []
+                energy = []
+                v_table.append([Z])
+                start_table = True
+                end_table = False
+            elif line.startswith("\n") == False and start_table:
+                # if count == 1:  # energy vector is the same for all Z
+                energy_i = float(line.split()[0])
+                if not is_energy_per_nucleon:
+                    energy_i *= float(Z)
+                energy.append(energy_i)
+                values.append(float(line.split()[1]))
+            elif not end_table:
+                start_table = False
+                # if count == 1:
+                # e_table.append(energy)
+                v_table.append(energy)
+                v_table.append(values)  # we want to do this only once per table
+                end_table = True
+        # check if same energy vector for all fragments
+        # e_ref = e_table[0]
+        # bool_vec = [
+        #     k for k in e_table if k != e_ref
+        # ]  # empty if all energies are the same
+        # if bool_vec:
+        #     raise ValueError(
+        #         "Energy vector should be the same for each fragment in RBE table"
+        #     )
+        # v_table.insert(0, e_ref)
+        return v_table
 
 
 class FluenceActor(g4.GateFluenceActor, ActorBase):
