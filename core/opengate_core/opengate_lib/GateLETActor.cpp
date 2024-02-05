@@ -169,8 +169,7 @@ void GateLETActor::SteppingAction(G4Step *step) {
     } else if (ftrackAverage) {
       scor_val_num = steplength * dedx_currstep * w / CLHEP::MeV;
       scor_val_den = steplength * w / CLHEP::mm;
-    }
-    if (fmMKM) {
+    } else if (fmMKM) {
       const G4ParticleDefinition *p = step->GetTrack()->GetParticleDefinition();
       if (p == G4Gamma::Gamma())
         p = G4Electron::Electron();
@@ -180,7 +179,8 @@ void GateLETActor::SteppingAction(G4Step *step) {
       auto charge = int(p->GetAtomicNumber());
       auto mass = p->GetAtomicMass();
       auto table_value = GetValue(charge, energy); // energy has unit?
-      auto alpha_currstep = fAlpha0 + fBeta * table_value;
+      //       auto alpha_currstep = fAlpha0 + fBeta * table_value;
+      auto alpha_currstep = table_value;
       /*
       ========== GATE 9.3
           if(mDoseEnergyByZ[i][k]>energy){
@@ -195,17 +195,22 @@ void GateLETActor::SteppingAction(G4Step *step) {
                                           ======= GATE 9.3
 
                                   */
-      //     std::cout<< "energy:" << energy << ", mass: " << mass << std::endl;
-      //     std::cout << "Charge: " << charge << ", energy/mass: " <<
-      //     energy/mass << std::endl; std::cout <<"z*_1D: " << table_value <<
-      //     ", alpha_step: " << alpha_currstep<< std::endl;
+      //            std::cout<< "energy:" << energy << ", mass: " << mass <<
+      //            std::endl; std::cout << "Charge: " << charge << ",
+      //            energy/mass: " << energy/mass << std::endl; std::cout
+      //            <<"z*_1D: " << table_value <<
+      //            ", alpha_step: " << alpha_currstep<< std::endl;
 
       // auto steplength = step->GetStepLength() / CLHEP::mm;
-      double scor_val_num = 0.;
-      double scor_val_den = 0.;
-
-      scor_val_num = edep * alpha_currstep / CLHEP::mm;
-      scor_val_den = edep / CLHEP::mm;
+      //       double scor_val_num = 0.;
+      //       double scor_val_den = 0.;
+      if (alpha_currstep > 0) {
+        scor_val_num = edep * alpha_currstep;
+        scor_val_den = edep;
+      } else {
+        scor_val_num = 0.;
+        scor_val_den = 0.;
+      }
     }
     ImageAddValue<ImageType>(cpp_numerator_image, index, scor_val_num);
     ImageAddValue<ImageType>(cpp_denominator_image, index, scor_val_den);
@@ -222,7 +227,7 @@ void GateLETActor::CreateLookupTable(py::dict &user_info) {
       DictGetVecofVecDouble(user_info, "lookup_table");
   // energies = VectorToG4DataVector(lookupTab[0]);
 
-  for (int i = 1; i < lookupTab.size(); i++) {
+  for (int i = 0; i < lookupTab.size(); i++) {
     table->push_back(VectorToG4DataVector(lookupTab[i]));
   }
 }
@@ -241,11 +246,17 @@ double GateLETActor::GetValue(int Z, float energy) {
   int bin_table = -1;
   G4DataVector *energies;
   G4DataVector *data;
-  for (int i = 0; i < table->size(); i++) {
+
+  //   std::cout<<"Get data for Z : "<<Z <<std::endl;
+  for (int i = 0; i < table->size(); i += 3) {
+    //   std::cout<<"*(*table)["<< i << "][0]: "<<(*(*table)[i])[0] <<std::endl;
     if (*(*table)[i] == *Z_vec) {
       bin_table = i;
       energies = (*table)[i + 1];
       data = (*table)[i + 2];
+      //       std::cout<<"Z_vec: "<<Z_vec <<std::endl;
+      //       std::cout<<"energies: "<< energies<<std::endl;
+      //       std::cout<<"data: "<< data <<std::endl;
     }
   }
   if (bin_table == -1) {

@@ -463,13 +463,13 @@ class LETActor(g4.GateLETActor, ActorBase):
                 raise ValueError(
                     "Lookup table path is necessary for RBE actor. Set it at user_info.lookup_table_path"
                 )
-            print("Going to read table:")
+            # print("Going to read table:")
             user_info.lookup_table = self.store_lookup_table(
                 user_info.lookup_table_path,
                 is_energy_per_nucleon=user_info.is_energy_per_nucleon,
             )  # to pass it on C++ side
-            print(type(user_info.lookup_table))
-            print(user_info.lookup_table)
+            # print(type(user_info.lookup_table))
+            # print(user_info.lookup_table)
             # === RBE
 
         ## TODO: why not super? what would happen?
@@ -720,6 +720,8 @@ class LETActor(g4.GateLETActor, ActorBase):
         #         "Energy vector should be the same for each fragment in RBE table"
         #     )
         # v_table.insert(0, e_ref)
+        # abc = np.array(v_table)
+        # print(f'{abc.shape}')
         return v_table
 
 

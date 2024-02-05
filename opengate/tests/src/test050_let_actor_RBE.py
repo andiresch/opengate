@@ -105,6 +105,7 @@ if __name__ == "__main__":
     # both lines do the same thing,
     RBE_act.dose_average = False
     RBE_act.enable_rbe = True
+    RBE_act.is_energy_per_nucleon = False
     RBE_act.fclin = 1.0
     RBE_act.lookup_table_path = (
         "/opt/GATE/GateRTion-1.1/install/data/RE_Alanine/RE_Alanine_RBEstyle.txt"
@@ -158,10 +159,11 @@ if __name__ == "__main__":
     # LETActor_primaries.dose_average = True
 
     # # # add dose actor, without e- (to check)
-    # fe = sim.add_filter("ParticleFilter", "f")
-    # fe.particle = "proton"
-    # fe.policy = "keep"
-    # LETActor_primaries.filters.append(fe)
+    fe = sim.add_filter("ParticleFilter", "f")
+    print(dir(fe))
+    fe.particle = "proton"
+    fe.policy = "keep"
+    RBE_act.filters.append(fe)
     # print(dir(fe))
 
     # fName_ref_IDD = "IDD__Proton_Energy1MeVu_RiFiout-Edep.mhd"
@@ -174,6 +176,7 @@ if __name__ == "__main__":
     # print("Filters: ", sim.filter_manager)
     # # print(sim.filter_manager.dump())
 
+    # help(fe)
     # start simulation
     sim.n = 10
     sim.run()
@@ -214,7 +217,7 @@ if __name__ == "__main__":
         ref_filename1=ref_fpath,
         filename2=paths.output / rbe_actor.user_info.output,
         tolerance=20,
-        plt_ylim=[0, 25],
+        plt_ylim=[0, 2],
     )
 
     # )
