@@ -6,9 +6,9 @@ import numpy as np
 import itk
 
 
-def create_test_mesh(file_name="myTesselatedBoxVolume.stl"):
+def create_test_mesh(file_name="myTessellatedBoxVolume.stl"):
     mode = stl.Mode(1)  # ASCII
-    # file_name = "myTesselatedBoxVolume.stl"
+    # file_name = "myTessellatedBoxVolume.stl"
     my_mesh = create_box_mesh()
     translate_mesh_to_center(my_mesh)
     show_mesh_info(my_mesh)
@@ -134,10 +134,10 @@ def simulation():
     world.size = [2 * m, 2 * m, 2 * m]
     world.material = "G4_Galactic"
 
-    tes = sim.add_volume("Tesselated", name="MyTesselatedVolume")
+    tes = sim.add_volume("Tessellated", name="MyTessellatedVolume")
     tes.material = "G4_WATER"
     tes.mother = "world"  # by default
-    tes.file_name = output_path / "myTesselatedBoxVolume.stl"
+    tes.file_name = output_path / "myTessellatedBoxVolume.stl"
 
     # print the list of available volumes types:
     print("Volume types :", sim.volume_manager.dump_volume_types())
@@ -172,7 +172,7 @@ def simulation():
 
     # Dose Actor
     dose = sim.add_actor("DoseActor", "dose")
-    dose.mother = "MyTesselatedVolume"
+    dose.mother = "MyTessellatedVolume"
     # number of voxels per dimension
     dose.size = [1, 1, 300]
     # size of the voxels
@@ -189,7 +189,7 @@ def simulation():
 def eval_results(simLink):
     # access to the results
     eval_Volume = simLink.volume_manager.get_volume(
-        "MyTesselatedVolume"
+        "MyTessellatedVolume"
     ).solid_info.cubic_volume
     print("volume: ", eval_Volume)
     volume_is_ok = utility.check_diff_abs(
@@ -230,7 +230,7 @@ paths = utility.get_default_test_paths(
 
 def main():
     print("Generating STL data")
-    create_test_mesh(file_name=paths.output / "myTesselatedBoxVolume.stl")
+    create_test_mesh(file_name=paths.output / "myTessellatedBoxVolume.stl")
     print("Running Gate Simulation")
     simLink = simulation()
     print("Simulation finished")

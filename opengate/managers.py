@@ -64,9 +64,7 @@ from .geometry.volumes import (
 )
 
 from .contrib.gdml.gdml_utils import (
-    get_positions_gdml,
-    initialize_solids_gdml,
-    get_volumes_gdml,
+    add_volumes_gdml,
 )
 
 
@@ -765,9 +763,8 @@ class VolumeManager(GateObject):
     def from_gdml(self, gdml_filepath):
         tree = ET.parse(gdml_filepath)
         root = tree.getroot()
-        positions = get_positions_gdml(root) or None
-        initialize_solids_gdml(self, root, positions=positions)
-        get_volumes_gdml(self, root)
+        add_volumes_gdml(self, root)
+        # get_rotation_translation_gdml(self, root)
 
     @property
     def world_volume(self):
