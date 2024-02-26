@@ -110,7 +110,27 @@ if __name__ == "__main__":
     RBE_act.lookup_table_path = (
         "/opt/GATE/GateRTion-1.1/install/data/RE_Alanine/RE_Alanine_RBEstyle.txt"
     )
-    # RBE_act.lookup_table_path = '/home/ideal/0_Data/21_RBE/01_Tables/NIRS_MKM_reduced_data.txt'
+    RBE_act.lookup_table_path = (
+        "/home/ideal/0_Data/21_RBE/01_Tables/NIRS_MKM_reduced_data.txt"
+    )
+
+    RE = "RE"
+    RE_act = sim.add_actor("LETActor", RE)
+    RE_act.output = paths.output / ("test050-" + RE + ".mhd")
+    RE_act.mother = phantom_off.name
+    RE_act.size = size
+    RE_act.spacing = spacing
+    RE_act.hit_type = "random"
+    RE_act.separate_output = False
+    # both lines do the same thing,
+    RE_act.dose_average = False
+    RE_act.enable_rbe = True
+    RE_act.is_energy_per_nucleon = False
+    RE_act.fclin = 1.0
+    RE_act.lookup_table_path = (
+        "/opt/GATE/GateRTion-1.1/install/data/RE_Alanine/RE_Alanine_RBEstyle.txt"
+    )
+    #
     # usesful for looping over several options
     # LETActor_IDD_d.track_average = True ## same as above line
 
