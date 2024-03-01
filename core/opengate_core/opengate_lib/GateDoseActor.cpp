@@ -70,7 +70,7 @@ GateDoseActor::GateDoseActor(py::dict &user_info)
   fHitType = DictGetStr(user_info, "hit_type");
   // Option: make a copy of the image for each thread, instead of writing on
   // same image
-  fcpImageForThreadsFlag = DictGetBool(user_info, "use_more_RAM");
+  fcpImageForThreadsFlag = DictGetBool(user_info, "use_more_ram");
   // Option: calculate the standard error of the mean
   fSTEofMeanFlag = DictGetBool(user_info, "ste_of_mean");
 }
