@@ -25,7 +25,7 @@ source opengate_env/bin/activate
 pip install --upgrade pip
 ```
 
-Then install the package opengate. The associated package ```opengate_core``` is automatically downloaded. ```opengate_core``` installs Geant4 librairies.
+Then install the package opengate. The associated package ```opengate_core``` is automatically downloaded. ```opengate_core``` installs Geant4 libraries.
 
 ```
 pip install opengate
@@ -58,14 +58,20 @@ pip install torch
 pip install gaga-phsp
 ````
 
-**WARNING (3)** With some linux systems (not all), you may encounter an error similar to “cannot allocate memory in static TLS block”. In that case, you must add a specific path to the linker as follows:
-````
-export LD_PRELOAD=<path to libG4processes>:<path to libG4geometry>:${LD_PRELOAD}
-````
-or
+**WARNING (3)** With some linux systems (not all), you may encounter an error similar to “cannot allocate memory in static TLS block”. Have a close look at the error message, it gives a hint already. There are two possible solutions, first try: 
 ````
 export GLIBC_TUNABLES=glibc.rtld.optional_static_tls=2000000
 ````
+if this does not work you may need to set a specific path to the linker:
+````
+export LD_PRELOAD=<path to libG4processes>:<path to libG4geometry>:${LD_PRELOAD}  
+````
+where the <path to libG4processes> would typically be found in the virtual environment directory: 
+````
+<absolute_path_to_venv_folder>/lib/python<python_version>/site-packages/opengate_core.libs/libG4processes*.so
+````
+The error message may tell you the path to those libraries already.
+
 
 The test history can be visualized here: https://opengate.github.io/opengate_tests_results
 
